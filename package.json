@@ -1,0 +1,19 @@
+{
+  "name": "biblioteca-digital-iembp",
+  "version": "1.0.0",
+  "description": "Biblioteca Digital de la I.E. Micaela Bastidas Puyucahua",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "Alvaro Montes",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "allowScripts": {
+    "electron@33.2.0": true
+  }
+}
