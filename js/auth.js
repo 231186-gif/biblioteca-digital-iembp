@@ -1,3 +1,24 @@
+const AuthService = {
+  currentSession: account,
+  login(username, password) {
+    const normalizedUsername = String(username ?? '').trim().toLowerCase();
+    if (!normalizedUsername || typeof password !== 'string' || !password) {
+      return { success: false, message: 'Credenciales inválidas' };
+    }
+
+    const user = users.find(x => x.username.toLowerCase() === normalizedUsername && x.password === password);
+    if (!user) return { success: false, message: 'Credenciales inválidas' };
+
+    this.currentSession = { id: user.id, name: user.name, username: user.username, role: user.role };
+    return { success: true, role: user.role, session: this.currentSession };
+  },
+  logout() {
+    this.currentSession = null;
+  }
+};
+
+window.AuthService = AuthService;
+
 function toast(msg) {
   document.getElementById('toastarea').innerHTML = `<div class="toast">${esc(msg)}</div>`;
   setTimeout(() => document.getElementById('toastarea').innerHTML = '', 2500);

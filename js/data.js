@@ -23,7 +23,7 @@ const seeds = [['Ecuaciones de primer grado', 0, 1, 'PDF', 'Libro', 'Aprende a r
 const base = seeds.map((s, i) => ({ id: i + 1, title: s[0], area: s[1], grado: s[2], format: s[3], type: s[4], description: s[5], author: 'Equipo pedagógico', featured: i < 6, views: Math.floor(50 + i * 17), difficulty: 'Básico', hasFile: false }));
 
 const defaultUsers = [
-  { id: 1, name: 'Administrador Principal', username: 'admin', role: 'Administrador', password: 'admin', status: 'Activo' },
+  { id: 1, name: 'Administrador Principal', username: 'admin', role: 'Administrador', password: 'admin2026', status: 'Activo' },
   { id: 2, name: 'Alumno General', username: 'alumno', role: 'Estudiante', password: 'alumno', status: 'Activo' },
   { id: 3, name: 'Profesor Juan Pérez', username: 'docente', role: 'Docente', password: '123', status: 'Activo' }
 ];
