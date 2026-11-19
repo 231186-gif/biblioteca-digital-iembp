@@ -1,3 +1,24 @@
+const AuthService = {
+  currentSession: account,
+  login(username, password) {
+    const normalizedUsername = String(username ?? '').trim().toLowerCase();
+    if (!normalizedUsername || typeof password !== 'string' || !password) {
+      return { success: false, message: 'Credenciales inválidas' };
+    }
+
+    const user = users.find(x => x.username.toLowerCase() === normalizedUsername && x.password === password);
+    if (!user) return { success: false, message: 'Credenciales inválidas' };
+
+    this.currentSession = { id: user.id, name: user.name, username: user.username, role: user.role };
+    return { success: true, role: user.role, session: this.currentSession };
+  },
+  logout() {
+    this.currentSession = null;
+  }
+};
+
+window.AuthService = AuthService;
+
 function toast(msg) {
   document.getElementById('toastarea').innerHTML = `<div class="toast">${esc(msg)}</div>`;
   setTimeout(() => document.getElementById('toastarea').innerHTML = '', 2500);
@@ -48,12 +69,12 @@ function authModal(tab = 'login') {
 }
 
 function login(form) {
-  const u = users.find(x => x.username.toLowerCase() === form.u.value.trim().toLowerCase() && x.password === form.p.value);
-  if (!u) { toast('Usuario o contraseña incorrectos'); return; }
-  account = { id: u.id, name: u.name, username: u.username, role: u.role };
+  const result = AuthService.login(form.u.value, form.p.value);
+  if (!result.success) { toast('Usuario o contraseña incorrectos'); return; }
+  account = result.session;
   store('account', account);
   hideModal();
-  toast('Bienvenido ' + u.name);
+  toast('Bienvenido ' + account.name);
   go('inicio');
 }
 
@@ -63,7 +84,7 @@ function registerPublic(form) {
   const newUser = { id: Date.now(), name: form.name.value.trim(), username: uname, role: 'Estudiante', password: form.p.value, status: 'Activo' };
   users.push(newUser);
   store('users', users);
-  account = { id: newUser.id, name: newUser.name, username: newUser.username, role: newUser.role };
+  account = AuthService.login(uname, newUser.password).session;
   store('account', account);
   hideModal();
   toast('Cuenta creada con éxito');
@@ -71,6 +92,7 @@ function registerPublic(form) {
 }
 
 function logout() {
+  AuthService.logout();
   account = null;
   store('account', null);
   toast('Sesión cerrada');
