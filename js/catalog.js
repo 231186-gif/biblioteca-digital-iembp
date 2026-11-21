@@ -28,9 +28,14 @@ function listing(kind) {
     return matchesTitle && matchesArea;
   });
 
+  // Texto del contador (singular o plural)
+  const countText = shown.length === 1
+    ? '1 material encontrado.'
+    : `${shown.length} materiales encontrados.`;
+
   return heading(
     kind === 'Actividad' ? '📝' : '📑',
     kind === 'Actividad' ? 'ACTIVIDADES' : 'BIBLIOTECA DIGITAL',
-    `${shown.length} materiales encontrados.`
+    countText
   ) + cardGrid(shown);
 }
