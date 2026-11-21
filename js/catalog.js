@@ -82,4 +82,69 @@ async function preview(id) {
   }
 
   const fileUrl = activePreviewUrl;
+
+  // Detectar tipo de archivo
+  const isPdf = fileUrl &&
+    (r.format?.toUpperCase() === 'PDF' ||
+     r.fileType?.toLowerCase().includes('pdf'));
+
+  const isText = fileUrl && r.format === 'TXT';
+
+  const isImage = fileUrl && (
+    r.fileType?.toLowerCase().includes('image') ||
+    ['JPG', 'JPEG', 'PNG', 'GIF', 'WEBP'].includes(
+      r.format?.toUpperCase()
+    )
+  );
+
+  // Construir visor
+  showModal(`
+    <header>
+      <h2>${esc(r.title)}</h2>
+      <button class="close" onclick="closePreview()">×</button>
+    </header>
+
+    <div style="margin:10px 0;">
+      <span class="pill">${esc(areas[r.area])}</span>
+      <span class="pill">${r.grado ? r.grado + '.º secundaria' : ''}</span>
+      <span class="pill">${esc(r.format)}</span>
+    </div>
+
+    <p class="muted">${esc(r.description)}</p>
+
+    <div style="
+      margin-top:15px;
+      background:#222;
+      border-radius:10px;
+      overflow:hidden;
+      min-height:350px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+
+      ${isPdf || isText ? `
+        <iframe
+          src="${fileUrl}"
+          style="width:100%;height:420px;border:none;">
+        </iframe>
+      ` : isImage ? `
+        <img
+          src="${fileUrl}"
+          style="max-width:100%;max-height:420px;object-fit:contain;">
+      ` : `
+        <div style="color:white;text-align:center;padding:40px;">
+          <div style="font-size:45px;margin-bottom:10px;">📄</div>
+          <p>No hay un archivo disponible para visualizar.</p>
+        </div>
+      `}
+
+    </div>
+
+    <div class="row" style="margin-top:15px;justify-content:flex-end;">
+      <button class="btn primary" onclick="closePreview()">
+        Cerrar visor
+      </button>
+    </div>
+  `);
 }
