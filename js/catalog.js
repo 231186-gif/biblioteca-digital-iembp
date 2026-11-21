@@ -18,9 +18,16 @@ function listing(kind) {
       : r.type !== 'Video' && r.type !== 'Actividad'
   );
 
+  // Aplicar búsqueda por título
+  const shown = eligible.filter(r => {
+    const query = (filters.q || '').trim().toLowerCase();
+    const matchesTitle = !query || r.title.toLowerCase().includes(query);
+    return matchesTitle;
+  });
+
   return heading(
     kind === 'Actividad' ? '📝' : '📑',
     kind === 'Actividad' ? 'ACTIVIDADES' : 'BIBLIOTECA DIGITAL',
-    `${eligible.length} materiales encontrados.`
-  ) + cardGrid(eligible);
+    `${shown.length} materiales encontrados.`
+  ) + cardGrid(shown);
 }
