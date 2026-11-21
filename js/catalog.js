@@ -141,10 +141,39 @@ async function preview(id) {
 
     </div>
 
+        ${isPdf ? `
+      <div class="row" style="margin-top:15px;justify-content:flex-end;">
+
+        <button class="btn"
+          onclick="window.open('${fileUrl}', '_blank')">
+          Abrir PDF
+        </button>
+
+        <a class="btn primary"
+          href="${fileUrl}"
+          download="${esc(r.title)}.pdf">
+          Descargar PDF
+        </a>
+
+      </div>
+    ` : ''}
+
     <div class="row" style="margin-top:15px;justify-content:flex-end;">
       <button class="btn primary" onclick="closePreview()">
         Cerrar visor
       </button>
     </div>
   `);
+
+  
+  // Gestionar el cierre al hacer clic fuera del visor
+  const overlay = document.querySelector('#modals .overlay');
+
+  if (overlay) {
+    overlay.onclick = (event) => {
+      if (event.target === overlay) {
+        closePreview();
+      }
+    };
+  }
 }
