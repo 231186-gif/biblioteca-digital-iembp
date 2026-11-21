@@ -51,3 +51,35 @@ function closePreview() {
     activePreviewUrl = null;
   }
 }
+
+async function preview(id) {
+  const r = resources.find(x => x.id === id);
+
+  if (!r) return;
+
+  // Liberar URL anterior
+  if (activePreviewUrl) {
+    URL.revokeObjectURL(activePreviewUrl);
+    activePreviewUrl = null;
+  }
+
+  // Registrar consulta
+  record(id, r.type === 'Video' ? 'Reproducción' : 'Vista previa');
+
+  let file = null;
+
+  // Recuperar archivo desde IndexedDB
+  if (r.hasFile) {
+    try {
+      file = await getAttachedFile(id);
+
+      if (file) {
+        activePreviewUrl = URL.createObjectURL(file);
+      }
+    } catch (e) {
+      console.error('Error al recuperar el archivo:', e);
+    }
+  }
+
+  const fileUrl = activePreviewUrl;
+}
