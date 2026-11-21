@@ -18,11 +18,14 @@ function listing(kind) {
       : r.type !== 'Video' && r.type !== 'Actividad'
   );
 
-  // Aplicar búsqueda por título
+  // Aplicar búsqueda por título y categoría
   const shown = eligible.filter(r => {
     const query = (filters.q || '').trim().toLowerCase();
     const matchesTitle = !query || r.title.toLowerCase().includes(query);
-    return matchesTitle;
+    const matchesArea =
+      filters.area === '' ||
+      String(r.area) === String(filters.area);
+    return matchesTitle && matchesArea;
   });
 
   return heading(
