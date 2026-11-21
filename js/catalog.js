@@ -58,11 +58,37 @@ function recommended() { return heading('⭐', 'RECOMENDADOS', 'Selección espec
 function favoritesPage() { if (!account) return `<div class="empty">Inicia sesión para ver favoritos.</div>`; return heading('♡', 'FAVORITOS', 'Tus materiales guardados.') + cardGrid(resources.filter(r => (favorites[account.id] || []).includes(r.id))); }
 function historyPage() { if (!account) return `<div class="empty">Inicia sesión para ver tu historial.</div>`; return heading('🕘', 'HISTORIAL', 'Tus consultas recientes.') + `<div class="panel"><p>Registros de actividad local.</p></div>`; }
 
+
 function listing(kind) {
-  let eligible = resources.filter(r => kind === 'Actividad' ? r.type === 'Actividad' : r.type !== 'Video' && r.type !== 'Actividad');
-  let shown = eligible.filter(r => (!filters.q || r.title.toLowerCase().includes(filters.q.toLowerCase())));
-  return heading(kind === 'Actividad' ? '📝' : '📑', kind === 'Actividad' ? 'ACTIVIDADES' : 'BIBLIOTECA DIGITAL', 'Materiales pedagógicos.') + cardGrid(shown);
+  // 1. Obtener los recursos correspondientes
+  const eligible = resources.filter(r =>
+    kind === 'Actividad'
+      ? r.type === 'Actividad'
+      : r.type !== 'Video' && r.type !== 'Actividad'
+  );
+
+  // 2. Aplicar búsqueda por título y categoría
+  const shown = eligible.filter(r => {
+    const query = (filters.q || '').trim().toLowerCase();
+
+    const matchesTitle =
+      !query || r.title.toLowerCase().includes(query);
+
+    const matchesArea =
+      filters.area === '' ||
+      String(r.area) === String(filters.area);
+
+    return matchesTitle && matchesArea;
+  });
+
+  // 3. Mostrar resultados
+  return heading(
+    kind === 'Actividad' ? '📝' : '📑',
+    kind === 'Actividad' ? 'ACTIVIDADES' : 'BIBLIOTECA DIGITAL',
+    `${shown.length} materiales encontrados.`
+  ) + cardGrid(shown);
 }
+
 
 function cardGrid(arr) {
   if (!arr.length) return `<div class="empty">No se encontraron recursos.</div>`;
