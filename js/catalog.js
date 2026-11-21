@@ -39,3 +39,15 @@ function listing(kind) {
     countText
   ) + cardGrid(shown);
 }
+
+// Visor de documentos
+let activePreviewUrl = null;
+
+function closePreview() {
+  hideModal();
+
+  if (activePreviewUrl) {
+    URL.revokeObjectURL(activePreviewUrl);
+    activePreviewUrl = null;
+  }
+}
