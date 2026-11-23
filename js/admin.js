@@ -20,12 +20,34 @@ function adminPage() {
       <button class="btn ${adminTab === 'auditoria' ? 'primary' : ''}" onclick="adminTab='auditoria';render()">📊 Auditoría y Accesos</button>
     </div>
     ${adminTab === 'recursos' ? `
+      <div class="panel" style="margin-bottom:16px">
+        <h3 style="color:var(--wine)">Registrar nuevo recurso en el inventario</h3>
+        <form onsubmit="event.preventDefault(); addResource(this.title.value, this.area.value, Number(this.grado.value), this.format.value); this.reset();" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <input type="text" name="title" placeholder="Título del material o libro" required style="flex:2;min-width:180px">
+          <select name="area" style="flex:1;min-width:140px">
+            ${Object.entries(areas).map(([key, label]) => `<option value="${esc(key)}">${esc(label)}</option>`).join('')}
+          </select>
+          <select name="grado" style="width:110px">
+            <option value="1">1.º Grado</option>
+            <option value="2">2.º Grado</option>
+            <option value="3">3.º Grado</option>
+            <option value="4">4.º Grado</option>
+            <option value="5">5.º Grado</option>
+          </select>
+          <select name="format" style="width:100px">
+            <option value="PDF">PDF</option>
+            <option value="EPUB">EPUB</option>
+            <option value="DOCX">DOCX</option>
+          </select>
+          <button type="submit" class="btn primary">+ Agregar</button>
+        </form>
+      </div>
       <div class="panel">
         <h3 style="color:var(--wine)">Catálogo general de la Intranet</h3>
         <div class="tablewrap" style="margin-top:12px">
           <table class="data">
             <tr><th>Recurso</th><th>Área / Grado</th><th>Formato</th><th>Acciones</th></tr>
-            ${resources.map(r => `<tr><td><b>${esc(r.title)}</b></td><td>${esc(areas[r.area])} (${r.grado}.º)</td><td><span class="pill">${esc(r.format)}</span></td><td><button class="btn tiny" onclick="deleteResource(${r.id})">Eliminar</button></td></tr>`).join('')}
+            ${resources.map(r => `<tr><td><b>${esc(r.title)}</b></td><td>${esc(areas[r.area] || r.area)} (${r.grado}.º)</td><td><span class="pill">${esc(r.format)}</span></td><td><button class="btn tiny" onclick="deleteResource(${r.id})">Eliminar</button></td></tr>`).join('')}
           </table>
         </div>
       </div>
@@ -54,6 +76,25 @@ function adminPage() {
       </div>
     `}
   `;
+}
+
+function addResource(title, area, grado, format) {
+  if (!title || !title.trim()) {
+    toast('El título del material es obligatorio');
+    return false;
+  }
+  const newResource = {
+    id: Date.now(),
+    title: title.trim(),
+    area: area || Object.keys(areas)[0] || 'general',
+    grado: grado || 1,
+    format: format || 'PDF'
+  };
+  resources.push(newResource);
+  store('resources', resources);
+  toast('Material registrado en el inventario');
+  render();
+  return true;
 }
 
 function deleteUser(id) {
