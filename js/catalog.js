@@ -1,3 +1,5 @@
+// js/catalog.js - Catálogo de recursos y visor de documentos (Roger)
+// ===== Navegación y vistas generales =====
 function go(p) { page = p; pageNo = 1; render(); window.scrollTo(0, 0); }
 
 function render() {
@@ -58,11 +60,16 @@ function recommended() { return heading('⭐', 'RECOMENDADOS', 'Selección espec
 function favoritesPage() { if (!account) return `<div class="empty">Inicia sesión para ver favoritos.</div>`; return heading('♡', 'FAVORITOS', 'Tus materiales guardados.') + cardGrid(resources.filter(r => (favorites[account.id] || []).includes(r.id))); }
 function historyPage() { if (!account) return `<div class="empty">Inicia sesión para ver tu historial.</div>`; return heading('🕘', 'HISTORIAL', 'Tus consultas recientes.') + `<div class="panel"><p>Registros de actividad local.</p></div>`; }
 
-function listing(kind) {
-  let eligible = resources.filter(r => kind === 'Actividad' ? r.type === 'Actividad' : r.type !== 'Video' && r.type !== 'Actividad');
-  let shown = eligible.filter(r => (!filters.q || r.title.toLowerCase().includes(filters.q.toLowerCase())));
-  return heading(kind === 'Actividad' ? '📝' : '📑', kind === 'Actividad' ? 'ACTIVIDADES' : 'BIBLIOTECA DIGITAL', 'Materiales pedagógicos.') + cardGrid(shown);
+function toggleFav(id) {
+  if (!account) { authModal('login'); return; }
+  let f = favorites[account.id] || [];
+  favorites[account.id] = f.includes(id) ? f.filter(x => x !== id) : [...f, id];
+  store('favorites', favorites);
+  render();
+  toast('Favoritos actualizados');
 }
+
+// ===== Catálogo =====
 
 function cardGrid(arr) {
   if (!arr.length) return `<div class="empty">No se encontraron recursos.</div>`;
@@ -74,54 +81,170 @@ function card(r) {
   return `<article class="resource"><div class="cover" style="--c:${colors[r.area]}"><span class="labeltag">${esc(r.format)}</span>${icons[r.area]}</div><div class="resbody"><h3>${esc(r.title)}</h3><p>${esc(r.description)}</p><div><span class="pill">${esc(areas[r.area])}</span></div><div class="resource-buttons"><button class="btn tiny" onclick="preview(${r.id})">Vista previa</button><button class="btn tiny" onclick="toggleFav(${r.id})">${fav ? '♥' : '♡'}</button></div></div></article>`;
 }
 
-function toggleFav(id) {
-  if (!account) { authModal('login'); return; }
-  let f = favorites[account.id] || [];
-  favorites[account.id] = f.includes(id) ? f.filter(x => x !== id) : [...f, id];
-  store('favorites', favorites);
-  render();
-  toast('Favoritos actualizados');
+function listing(kind) {
+  // Obtener los recursos correspondientes (libros o actividades)
+  const eligible = resources.filter(r =>
+    kind === 'Actividad'
+      ? r.type === 'Actividad'
+      : r.type !== 'Video' && r.type !== 'Actividad'
+  );
+
+  // Aplicar búsqueda por título y categoría
+  const shown = eligible.filter(r => {
+    const query = (filters.q || '').trim().toLowerCase();
+    const matchesTitle = !query || r.title.toLowerCase().includes(query);
+    const matchesArea =
+      filters.area === '' ||
+      String(r.area) === String(filters.area);
+    return matchesTitle && matchesArea;
+  });
+
+  // Texto del contador (singular o plural)
+  const countText = shown.length === 1
+    ? '1 material encontrado.'
+    : `${shown.length} materiales encontrados.`;
+
+  return heading(
+    kind === 'Actividad' ? '📝' : '📑',
+    kind === 'Actividad' ? 'ACTIVIDADES' : 'BIBLIOTECA DIGITAL',
+    countText
+  ) + cardGrid(shown);
+}
+
+// Visor de documentos
+let activePreviewUrl = null;
+
+function closePreview() {
+  hideModal();
+
+  if (activePreviewUrl) {
+    URL.revokeObjectURL(activePreviewUrl);
+    activePreviewUrl = null;
+  }
 }
 
 async function preview(id) {
   const r = resources.find(x => x.id === id);
-  if (!r) return;
-  record(id, r.type === 'Video' ? 'Reproducción' : 'Vista previa');
 
-  let fileUrl = '';
-  if (r.hasFile) {
-    try {
-      const file = await getAttachedFile(id);
-      if (file) fileUrl = URL.createObjectURL(file);
-    } catch (e) { console.error(e); }
+  if (!r) return;
+
+  // Liberar URL anterior
+  if (activePreviewUrl) {
+    URL.revokeObjectURL(activePreviewUrl);
+    activePreviewUrl = null;
   }
 
+  // Registrar consulta
+  record(id, r.type === 'Video' ? 'Reproducción' : 'Vista previa');
+
+  let file = null;
+
+  // Recuperar archivo desde IndexedDB
+  if (r.hasFile) {
+    try {
+      file = await getAttachedFile(id);
+
+      if (file) {
+        activePreviewUrl = URL.createObjectURL(file);
+      }
+    } catch (e) {
+      console.error('Error al recuperar el archivo:', e);
+    }
+  }
+
+  const fileUrl = activePreviewUrl;
+
+  // Detectar tipo de archivo
+  const isPdf = fileUrl &&
+    (r.format?.toUpperCase() === 'PDF' ||
+     r.fileType?.toLowerCase().includes('pdf'));
+
+  const isText = fileUrl && r.format === 'TXT';
+
+  const isImage = fileUrl && (
+    r.fileType?.toLowerCase().includes('image') ||
+    ['JPG', 'JPEG', 'PNG', 'GIF', 'WEBP'].includes(
+      r.format?.toUpperCase()
+    )
+  );
+
+  // Construir visor
   showModal(`
     <header>
       <h2>${esc(r.title)}</h2>
-      <button class="close" onclick="hideModal()">×</button>
+      <button class="close" onclick="closePreview()">×</button>
     </header>
-    <div style="margin: 10px 0;">
+
+    <div style="margin:10px 0;">
       <span class="pill">${esc(areas[r.area])}</span>
-      <span class="pill">${r.grado}.º secundaria</span>
+      <span class="pill">${r.grado ? r.grado + '.º secundaria' : ''}</span>
       <span class="pill">${esc(r.format)}</span>
     </div>
+
     <p class="muted">${esc(r.description)}</p>
-    <div style="margin-top: 15px; background: #222; border-radius: 10px; overflow: hidden; min-height: 350px; display: flex; align-items: center; justify-content: center;">
-      ${fileUrl && (r.format === 'PDF' || r.fileType?.includes('pdf') || r.format === 'TXT') ? `
-        <iframe src="${fileUrl}" style="width: 100%; height: 420px; border: none;"></iframe>
-      ` : fileUrl && r.fileType?.includes('image') ? `
-        <img src="${fileUrl}" style="max-width: 100%; max-height: 420px; object-fit: contain;">
+
+    <div style="
+      margin-top:15px;
+      background:#222;
+      border-radius:10px;
+      overflow:hidden;
+      min-height:350px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+
+      ${isPdf || isText ? `
+        <iframe
+          src="${fileUrl}"
+          style="width:100%;height:420px;border:none;">
+        </iframe>
+      ` : isImage ? `
+        <img
+          src="${fileUrl}"
+          style="max-width:100%;max-height:420px;object-fit:contain;">
       ` : `
-        <div style="color: #fff; text-align: center; padding: 40px;">
-          <div style="font-size: 45px; margin-bottom: 10px;">📄</div>
-          <p>Vista previa interactiva institucional.</p>
-          <p class="muted" style="font-size: 12px;">El documento está registrado en el repositorio local.</p>
+        <div style="color:white;text-align:center;padding:40px;">
+          <div style="font-size:45px;margin-bottom:10px;">📄</div>
+          <p>No hay un archivo disponible para visualizar.</p>
         </div>
       `}
+
     </div>
-    <div class="row" style="margin-top: 15px; justify-content: flex-end;">
-      <button class="btn primary" onclick="hideModal()">Cerrar visor</button>
+
+        ${isPdf ? `
+      <div class="row" style="margin-top:15px;justify-content:flex-end;">
+
+        <button class="btn"
+          onclick="window.open('${fileUrl}', '_blank')">
+          Abrir PDF
+        </button>
+
+        <a class="btn primary"
+          href="${fileUrl}"
+          download="${esc(r.title)}.pdf">
+          Descargar PDF
+        </a>
+
+      </div>
+    ` : ''}
+
+    <div class="row" style="margin-top:15px;justify-content:flex-end;">
+      <button class="btn primary" onclick="closePreview()">
+        Cerrar visor
+      </button>
     </div>
   `);
+
+  
+  // Gestionar el cierre al hacer clic fuera del visor
+  const overlay = document.querySelector('#modals .overlay');
+
+  if (overlay) {
+    overlay.onclick = (event) => {
+      if (event.target === overlay) {
+        closePreview();
+      }
+    };
+  }
 }
