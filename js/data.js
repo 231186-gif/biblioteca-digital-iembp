@@ -65,3 +65,14 @@ function record(id, action) {
   history.push({ uid: account.id, id, action, date: new Date().toLocaleString('es-PE') });
   store('history', history);
 }
+
+// Capa de persistencia complementaria (Yenifer - módulo base de datos)
+const DatabaseManager = {
+  initDatabase: function() {
+    console.log("Inicializando base de datos local Biblioteca IEMBP...");
+    return openLibraryDB();
+  },
+  getBooks: function() {
+    return resources;
+  }
+};
